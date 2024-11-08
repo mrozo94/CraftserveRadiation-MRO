@@ -39,6 +39,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -114,11 +116,11 @@ public class Radiation implements Listener {
     private void broadcastEscape(Player player) {
         Objects.requireNonNull(player, "player");
 
-        String radiationId = this.config.id();
-        logger.info(player.getName() + " has entered \"" + radiationId + "\" radiation zone at " + player.getLocation());
+        String id = this.getId();
+        logger.info(player.getName() + " has entered \"" + id + "\" radiation zone at " + player.getLocation());
 
         this.config.enterMessage().ifPresent(rawMessage -> {
-            String message = ChatColor.RED + MessageFormat.format(rawMessage, player.getDisplayName() + ChatColor.RESET, radiationId);
+            String message = ChatColor.RED + MessageFormat.format(rawMessage, player.getDisplayName() + ChatColor.RESET, id);
             for (Player online : this.plugin.getServer().getOnlinePlayers()) {
                 if (online.canSee(player)) {
                     online.sendMessage(message);
@@ -129,6 +131,10 @@ public class Radiation implements Listener {
 
     public Set<UUID> getAffectedPlayers() {
         return Collections.unmodifiableSet(this.affectedPlayers);
+    }
+
+    public String getId() {
+        return this.config.id();
     }
 
     public Matcher getMatcher() {
@@ -256,6 +262,12 @@ public class Radiation implements Listener {
             String radiationId = regions.queryValue(localPlayer, this.radiationTypeFlag);
             if (radiationId == null || radiationId.isEmpty()) {
                 radiationId = Config.DEFAULT_ID;
+            }
+
+            Permission permission = new Permission("craftserveradiation.immune." + radiationId, PermissionDefault.FALSE);
+            if (player.hasPermission(permission)) {
+                // Players with this permission are immune to radiation. They won't match this matcher.
+                return false;
             }
 
             return this.acceptedRadiationTypes.contains(radiationId);
