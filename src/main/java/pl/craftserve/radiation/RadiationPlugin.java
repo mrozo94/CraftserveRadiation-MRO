@@ -59,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang.StringUtils; // REMOVE ME: it's for checking 1.
 
 public final class RadiationPlugin extends JavaPlugin {
     static final Logger logger = Logger.getLogger(RadiationPlugin.class.getName());
@@ -85,10 +86,19 @@ public final class RadiationPlugin extends JavaPlugin {
     private final Map<String, Radiation> activeRadiations = new LinkedHashMap<>();
 
     private CraftserveListener craftserveListener;
-    private MetricsHandler metricsHandler;
+    //private MetricsHandler metricsHandler;
 
     private RadiationNmsBridge initializeNmsBridge() {
         String serverVersion = RadiationNmsBridge.getServerVersion(this.getServer());
+
+        // REMOVE ME: it's for checking 1.
+        Package serverClassPackage = this.getServer().getClass().getPackage();
+        String[] packages = StringUtils.split(serverClassPackage.getName(), ".");
+        for (int i=0;i<packages.length;i++)
+        {
+        logger.info(packages[i]);
+        }
+
         logger.info("Detected server version: " + serverVersion);
 
         switch (serverVersion) {
@@ -107,6 +117,10 @@ public final class RadiationPlugin extends JavaPlugin {
             case "v1_19_R1":
                 return new V1_19_R1NmsBridge(serverVersion);
             case "v1_19_R2":
+            //
+            // FIXME: On 1.21.1 serverVersion returns package name "org.bukkit.craftbukkit" with no following version.
+            //
+            case "craftbukkit": 
                 return new V1_19_R2NmsBridge(serverVersion);
             default:
                 throw new RuntimeException("Unsupported server version: " + serverVersion);
@@ -179,7 +193,7 @@ public final class RadiationPlugin extends JavaPlugin {
         radiationCommandHandler.register(this.getCommand("radiation"));
 
         this.craftserveListener = new CraftserveListener(this);
-        this.metricsHandler = new MetricsHandler(this, server, this.radiationNmsBridge.getClass());
+        //this.metricsHandler = new MetricsHandler(this, server, this.radiationNmsBridge.getClass());
 
         this.effect.enable();
         this.display.enable();
@@ -195,14 +209,14 @@ public final class RadiationPlugin extends JavaPlugin {
         logger.info("Loaded and enabled " + this.activeRadiations.size() + " radiation(s): " + String.join(", ", radiationIds));
 
         this.craftserveListener.enable();
-        this.metricsHandler.start();
+        //this.metricsHandler.start();
     }
 
     @Override
     public void onDisable() {
-        if (this.metricsHandler != null) {
-            this.metricsHandler.stop();
-        }
+        //if (this.metricsHandler != null) {
+        //    this.metricsHandler.stop();
+        //}
         if (this.craftserveListener != null) {
             this.craftserveListener.disable();
         }
